@@ -7,30 +7,33 @@ export default function AiResult({ plan, onReset }) {
   const planRef = useRef(null);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Download PDF (emojis & special characters fix)
+  // Clean text for PDF (remove special characters)
+  const cleanTextForPDF = (text) => {
+    return text
+      .replace(/[^\x00-\x7F]/g, "") // remove non-ASCII
+      .replace(/•/g, "-"); // replace bullet
+  };
+
+  // Download PDF
   const downloadPDF = async () => {
     const pdf = new jsPDF("p", "mm", "a4");
 
-    // Render HTML content into PDF
-    await pdf.html(planRef.current, {
-      x: 10,
-      y: 10,
-      width: 190,
-      windowWidth: 800,
-      html2canvas: {
-        scale: 0.95,
-        useCORS: true,
-      },
-    });
+    // Get clean text
+    const rawText = planRef.current.innerText;
+    const cleanText = cleanTextForPDF(rawText);
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(11);
+    pdf.text(cleanText, 10, 15, { maxWidth: 190 });
 
     pdf.save("AI_Fitness_Plan.pdf");
   };
 
-  // Copy plan with modern toast popup
+  // Copy plan
   const copyPlan = () => {
     navigator.clipboard.writeText(plan);
     setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000); // hide after 2 sec
+    setTimeout(() => setCopySuccess(false), 2000);
   };
 
   return (
@@ -145,7 +148,7 @@ export default function AiResult({ plan, onReset }) {
         🔁 Generate New Plan
       </button>
 
-      {/* Toast popup for copy */}
+      {/* Toast popup */}
       {copySuccess && (
         <div
           style={{
@@ -168,32 +171,14 @@ export default function AiResult({ plan, onReset }) {
 
       <style jsx>{`
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(40px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(40px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeInOut {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          10% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          90% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
+          0% { opacity: 0; transform: translateY(-10px); }
+          10% { opacity: 1; transform: translateY(0); }
+          90% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-10px); }
         }
       `}</style>
     </div>
@@ -211,7 +196,5 @@ const btnStyle = (bg) => ({
   fontWeight: "800",
   fontSize: "14px",
 });
-
-
 
 
