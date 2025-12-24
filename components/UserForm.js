@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function UserForm({ onGenerate, theme }) {
+export default function UserForm({ onGenerate }) {
   const [form, setForm] = useState({
     name: "",
     age: "",
@@ -15,12 +15,33 @@ export default function UserForm({ onGenerate, theme }) {
 
   const [error, setError] = useState("");
 
+  // Normal change (NO LIMIT HERE)
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  // LIMIT ONLY WHEN USER LEAVES FIELD
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    let v = Number(value);
+
+    if (name === "height") {
+      if (v < 100) v = 100;
+      if (v > 230) v = 230;
+    }
+
+    if (name === "weight") {
+      if (v < 30) v = 30;
+      if (v > 200) v = 200;
+    }
+
+    if (value !== "") {
+      setForm({ ...form, [name]: v });
+    }
   };
 
   const handleSubmit = async () => {
-    // Empty field validation
     for (let key in form) {
       if (!form[key]) {
         setError("⚠️ Please fill all fields before generating the plan");
@@ -31,7 +52,6 @@ export default function UserForm({ onGenerate, theme }) {
     setError("");
 
     try {
-      // API Call (replace /api/generatePlan with your backend route)
       const response = await fetch("/api/generatePlan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,8 +59,9 @@ export default function UserForm({ onGenerate, theme }) {
       });
 
       const data = await response.json();
-      onGenerate(data.plan); // Pass plan to AiResult
-    } catch (err) {
+      if (data.plan) onGenerate(data.plan);
+      else setError("❌ Error generating plan. Try again!");
+    } catch {
       setError("❌ Error generating plan. Try again!");
     }
   };
@@ -55,7 +76,6 @@ export default function UserForm({ onGenerate, theme }) {
         width: "100%",
         display: "grid",
         gap: "14px",
-        animation: "fadeUp 0.6s ease",
       }}
     >
       <h2 style={{ textAlign: "center", color: "var(--text)" }}>
@@ -73,71 +93,49 @@ export default function UserForm({ onGenerate, theme }) {
         placeholder="Name"
         value={form.name}
         onChange={handleChange}
-        style={{
-          padding: "14px",
-          borderRadius: "14px",
-          border: "1px solid var(--border)",
-          background: "var(--card)",
-          color: "var(--text)",
-        }}
+        style={inputStyle}
       />
+
       <input
         name="age"
         type="number"
-        placeholder="Age"
+        inputMode="numeric"
+        placeholder="Age (10–75)"
         value={form.age}
         onChange={handleChange}
-        style={{
-          padding: "14px",
-          borderRadius: "14px",
-          border: "1px solid var(--border)",
-          background: "var(--card)",
-          color: "var(--text)",
-        }}
+        style={inputStyle}
       />
 
       <div style={{ display: "flex", gap: "10px" }}>
         <input
           name="height"
-          placeholder="Height (cm)"
+          type="number"
+          inputMode="numeric"
+          placeholder="Height (cm, 100–230)"
           value={form.height}
           onChange={handleChange}
-          style={{
-            padding: "14px",
-            borderRadius: "14px",
-            border: "1px solid var(--border)",
-            background: "var(--card)",
-            color: "var(--text)",
-            flex: 1,
-          }}
+          onBlur={handleBlur}
+          style={{ ...inputStyle, flex: 1 }}
         />
+
         <input
           name="weight"
-          placeholder="Weight (kg)"
+          type="number"
+          inputMode="numeric"
+          placeholder="Weight (kg, 30–200)"
           value={form.weight}
           onChange={handleChange}
-          style={{
-            padding: "14px",
-            borderRadius: "14px",
-            border: "1px solid var(--border)",
-            background: "var(--card)",
-            color: "var(--text)",
-            flex: 1,
-          }}
+          onBlur={handleBlur}
+          style={{ ...inputStyle, flex: 1 }}
         />
       </div>
 
+      {/* LISTS SAME AS BEFORE */}
       <select
         name="goal"
         value={form.goal}
         onChange={handleChange}
-        style={{
-          padding: "14px",
-          borderRadius: "14px",
-          border: "1px solid var(--border)",
-          background: "var(--card)",
-          color: "var(--text)",
-        }}
+        style={inputStyle}
       >
         <option value="">Fitness Goal</option>
         <option>Weight Loss</option>
@@ -149,13 +147,7 @@ export default function UserForm({ onGenerate, theme }) {
         name="level"
         value={form.level}
         onChange={handleChange}
-        style={{
-          padding: "14px",
-          borderRadius: "14px",
-          border: "1px solid var(--border)",
-          background: "var(--card)",
-          color: "var(--text)",
-        }}
+        style={inputStyle}
       >
         <option value="">Fitness Level</option>
         <option>Beginner</option>
@@ -166,15 +158,8 @@ export default function UserForm({ onGenerate, theme }) {
       <select
         name="diet"
         value={form.diet}
-          onChange={handleChange}
-        style={{
-          padding: "14px",
-          borderRadius: "14px",
-          border: "1px solid var(--border)",
-          background: "var(--card)",
-          color: "var(--text)",
-        }}
-        
+        onChange={handleChange}
+        style={inputStyle}
       >
         <option value="">Diet Preference</option>
         <option>Veg</option>
@@ -183,22 +168,43 @@ export default function UserForm({ onGenerate, theme }) {
         <option>Keto</option>
       </select>
 
-      <button
-        onClick={handleSubmit}
-        style={{
-          marginTop: "10px",
-          padding: "14px",
-          borderRadius: "14px",
-          border: "none",
-          cursor: "pointer",
-          background: "linear-gradient(135deg,#22d3ee,#38bdf8)",
-          color: "#020617",
-          fontWeight: "bold",
-        }}
-      >
+      <button onClick={handleSubmit} style={btnStyle}>
         Generate AI Plan 🚀
       </button>
+
+      {/* REMOVE NUMBER ARROWS */}
+      <style jsx global>{`
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
     </div>
   );
 }
+
+const inputStyle = {
+  padding: "14px",
+  borderRadius: "14px",
+  border: "1px solid var(--border)",
+  background: "var(--card)",
+  color: "var(--text)",
+};
+
+const btnStyle = {
+  marginTop: "10px",
+  padding: "14px",
+  borderRadius: "14px",
+  border: "none",
+  cursor: "pointer",
+  background: "linear-gradient(135deg,#22d3ee,#38bdf8)",
+  color: "#020617",
+  fontWeight: "bold",
+};
+
+
 
